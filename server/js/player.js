@@ -79,7 +79,11 @@ module.exports = Player = Character.extend({
                 // Sanitized messages may become empty. No need to broadcast empty chat messages.
                 if(msg && msg !== "") {
                     msg = msg.substr(0, 60); // Enforce maxlength of chat input
-                    self.broadcast(new Messages.Chat(self, msg), false);
+                    if(msg.substr(0, 3) == "/w ") {
+                        self.server.pushBroadcast(new Messages.Chat(self, msg));
+                    } else {
+                        self.broadcastToZone(new Messages.Chat(self, msg), false);
+                    }
                 }
             }
             else if(action === Types.Messages.MOVE) {

@@ -1,10 +1,10 @@
 
 define(['infomanager', 'bubble', 'renderer', 'map', 'animation', 'sprite', 'tile',
         'warrior', 'gameclient', 'audio', 'updater', 'transition', 'pathfinder',
-        'item', 'mob', 'npc', 'player', 'character', 'chest', 'mobs', 'exceptions', 'config', '../../shared/js/gametypes'],
+        'item', 'mob', 'npc', 'player', 'character', 'chest', 'mobs', 'exceptions', 'config', 'chathandler', '../../shared/js/gametypes'],
 function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedTile,
          Warrior, GameClient, AudioManager, Updater, Transition, Pathfinder,
-         Item, Mob, Npc, Player, Character, Chest, Mobs, Exceptions, config) {
+         Item, Mob, Npc, Player, Character, Chest, Mobs, Exceptions, config, ChatHandler) {
     
     var Game = Class.extend({
         init: function(app) {
@@ -48,6 +48,9 @@ function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedT
         
             // combat
             this.infoManager = new InfoManager(this);
+
+            // Chat commands
+            this.chathandler = new ChatHandler(this);
         
             // zoning
             this.currentZoning = null;
@@ -1463,8 +1466,8 @@ function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedT
                 });
             
                 self.client.onChatMessage(function(entityId, message) {
-                    var entity = self.getEntityById(entityId);
-                    if(!self.parseChatCommands(entity, message)) {
+                    if(!self.chathandler.processReceiveMessage(entityId, message)) {
+                        var entity = self.getEntityById(entityId);
                         self.createBubble(entityId, message);
                         self.assignBubbleTo(entity);
                     }
@@ -2192,7 +2195,9 @@ function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedT
         },
     
         say: function(message) {
-            this.client.sendChat(message);
+            if(!this.chathandler.processSendMessage(message)) {
+                this.client.sendChat(message);
+            }
         },
     
         createBubble: function(id, message) {
@@ -2475,27 +2480,8 @@ function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedT
                     this.renderer.targetRect = targetRect;
                 }
             }
-        },
-
-        /**
-         * Handles special chat commands.  Return true to disable character chat bubble.
-         *
-         * @param entity
-         * @param message
-         * @return boolean
-         */
-        parseChatCommands: function(entity, message) {
-            switch (message.substr(0, 3)) {
-                case '/w ':
-                    chatMessage = entity.name + ": " + message.substr(3);
-                    log.debug("/w " + chatMessage);
-                    messageId = Math.floor(Math.random() * 10000);
-                    this.createBubble(messageId, chatMessage);
-                    this.assignGlobalBubble(messageId);
-                    return true;
-            }
-            return false;
         }
+
     });
     
     return Game;
