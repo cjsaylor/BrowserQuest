@@ -23,6 +23,10 @@ module.exports = Player = Character.extend({
         this.lastCheckpoint = null;
         this.formatChecker = new FormatChecker();
         this.disconnectTimeout = null;
+        this.chatCommands = {
+            WORLDCHAT: "/w ",
+            TELEPORT: "/t "
+        };
         
         this.connection.listen(function(message) {
             var action = parseInt(message[0]);
@@ -79,10 +83,23 @@ module.exports = Player = Character.extend({
                 // Sanitized messages may become empty. No need to broadcast empty chat messages.
                 if(msg && msg !== "") {
                     msg = msg.substr(0, 60); // Enforce maxlength of chat input
-                    if(msg.substr(0, 3) == "/w ") {
-                        self.server.pushBroadcast(new Messages.Chat(self, msg));
-                    } else {
-                        self.broadcastToZone(new Messages.Chat(self, msg), false);
+                    switch(msg.substr(0, 3)) {
+                        case self.chatCommands.WORLDCHAT:
+                            self.server.pushBroadcast(new Messages.Chat(self, msg));
+                            break;
+                        case self.chatCommands.TELEPORT:
+                            var playerName = msg.substr(3);
+                            for(var playerId in self.server.players) {
+                                if(self.server.players[playerId].name == playerName) {
+                                    targetPlayer = self.server.players[playerId];
+                                    if(self.server.isValidPosition(targetPlayer.x, targetPlayer.y)) {
+                                        self.server.pushToPlayer(self, new Messages.Chat(self, self.chatCommands.TELEPORT + targetPlayer.x + "," + targetPlayer.y));
+                                    }
+                                }
+                            }
+                            break;
+                        default:
+                            self.broadcastToZone(new Messages.Chat(self, msg), false);
                     }
                 }
             }

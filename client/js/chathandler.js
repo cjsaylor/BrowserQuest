@@ -51,6 +51,18 @@ define(function() {
                             self.game.createBubble(messageId, message);
                             self.game.assignGlobalBubble(messageId);
                             return true;
+                        },
+                        // Teleport
+                        "/t ": function(entityId, message) {
+                            choords = message.split(',');
+                            x = parseInt(choords[0]);
+                            y = parseInt(choords[1]);
+                            self.game.player.setGridPosition(x, y);
+                            self.game.player.nextGridX = x;
+                            self.game.player.nextGridY = y;
+                            self.game.client.sendTeleport(x, y);
+                            self.game.resetCamera();
+                            return true;
                         }
                     }
                 };
